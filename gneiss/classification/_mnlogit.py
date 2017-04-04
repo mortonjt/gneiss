@@ -12,17 +12,15 @@ from gneiss.balances import balance_basis
 from gneiss.util import rename_internal_nodes
 
 
+# TODO: Remove instances of tree from function header
+# TODO: Add formula
+# TODO: Add metadata variable
 def mnlogit(outcome, balances, tree, **kwargs):
     """ Multinomial logistic regression on balances.
 
     A multinomial logistic regression is applied to balances.
     This technique can be utilized as a classification technique.
-    The relative abundance data is transformed into balances using the
-    ILR transformation, using a tree to specify the groupings of the features.
-    The regression is then performed on each balance separately. Only positive
-    data will be accepted, so if there are zeros present, consider using a zero
-    imputation method such as ``multiplicative_replacement`` or add a
-    pseudocount.
+    The regression is then performed on each balance separately.
 
     Parameters
     ----------
@@ -48,7 +46,8 @@ def mnlogit(outcome, balances, tree, **kwargs):
 
     basis, _ = balance_basis(tree)
 
-    return MNLogitModel(basis=basis, tree=tree, balances=balances, submodels=model)
+    return MNLogitModel(basis=basis, tree=tree,
+                        balances=balances, submodels=model)
 
 
 class MNLogitModel(ClassificationModel):
@@ -79,14 +78,14 @@ class MNLogitModel(ClassificationModel):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def fit(self, regularized=False, **kwargs):
+    def fit(self, regularized=True, **kwargs):
         """ Fit the model.
 
         Parameters
         ----------
         regularized : bool
             Specifies if a regularization procedure should be used
-            when performing the fit. (default = False)
+            when performing the fit. (default = True)
         **kwargs : dict
            Keyword arguments used to tune the parameter estimation.
         """

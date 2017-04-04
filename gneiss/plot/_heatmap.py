@@ -14,7 +14,7 @@ from gneiss.util import match_tips
 
 
 def heatmap(table, tree, mdvar, highlights=None,
-            grid_col='w', grid_width=2,
+            grid_col='w', grid_width=2, cmap='viridis', 
             highlight_width=0.02, figsize=(5, 5)):
     """ Creates heatmap plotting object
 
@@ -98,7 +98,7 @@ def heatmap(table, tree, mdvar, highlights=None,
 
     # plot heatmap
     ax_heatmap = fig.add_axes([ax1_x, ax1_y, ax1_w, ax1_h], frame_on=True)
-    _plot_heatmap(ax_heatmap, table, mdvar, grid_col, grid_width)
+    _plot_heatmap(ax_heatmap, table, mdvar, grid_col, grid_width, cmap)
 
     # plot dendrogram
     ax_dendrogram = fig.add_axes([axm_x, axm_y, axm_w, axm_h],
@@ -223,7 +223,7 @@ def _sort_table(table, mdvar):
     return table, mdvar
 
 
-def _plot_heatmap(ax_heatmap, table, mdvar, grid_col, grid_width):
+def _plot_heatmap(ax_heatmap, table, mdvar, grid_col, grid_width, cmap):
     """ Sorts metadata category and aligns with table.
 
     Parameters
@@ -248,7 +248,7 @@ def _plot_heatmap(ax_heatmap, table, mdvar, grid_col, grid_width):
     table, mdvar = _sort_table(table, mdvar)
     table = table.iloc[::-1, :]
     ax_heatmap.imshow(table, aspect='auto', interpolation='nearest',
-                      cmap='viridis')
+                      cmap=cmap)
     ax_heatmap.set_ylim([0, table.shape[0]])
     vcounts = mdvar.value_counts()
 

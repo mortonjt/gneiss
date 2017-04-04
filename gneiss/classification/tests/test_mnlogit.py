@@ -25,6 +25,7 @@ class TestMNLogit(unittest.TestCase):
     def test_mnlogit(self):
         N = 100
         F = 10
+        np.random.seed(0)
         mat = block_diagonal(nrows=N, ncols=F, nblocks=2) + 0.0001
         mat = pd.DataFrame(mat, index=np.arange(N).astype(np.str),
                            columns=np.arange(F).astype(np.str))
@@ -35,7 +36,6 @@ class TestMNLogit(unittest.TestCase):
         tree = rename_internal_nodes(tree)
         balances = ilr_transform(table=mat, tree=tree)
         model = mnlogit(outcome, balances, tree)
-        np.random.seed(0)
         model.fit(regularized=True, alpha=0.0001)
         exp = pd.Series({'y0': 1.283722,
                          'y1': 0.000000,

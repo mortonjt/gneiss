@@ -158,7 +158,11 @@ def ols(formula, table, metadata, tree, **kwargs):
     statsmodels.regression.linear_model.OLS
     skbio.stats.composition.multiplicative_replacement
     """
-    # TODO: clean up
+    # TODO: clean up - we'll need to make sure that this can actually
+    # take balances as input.
+    # TODO: double check to make sure that we are dealing with balances
+    # one way to check is to see if there are n features / n tips
+    # or n-1 features / n tips
     table, metadata, tree = _intersect_of_table_metadata_tree(table,
                                                               metadata,
                                                               tree)
@@ -220,6 +224,7 @@ class OLSModel(RegressionModel):
            Keyword arguments used to tune the parameter estimation.
 
         """
+        # TODO: Enable regularization!
         # assumes that the underlying submodels have implemented `fit`.
         self.results = [s.fit(**kwargs) for s in self.submodels]
 

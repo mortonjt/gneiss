@@ -163,6 +163,7 @@ def _deposit_results_html(index_f):
     index_f.write(('<th>Coefficient pvalues</th>\n'))
     index_f.write(('<a href="pvalues.csv">'
                    'Download as CSV</a><br>\n'))
+    # TODO: Remove balances (since we will pass them in directly)
     index_f.write(('<th>Raw Balances</th>\n'))
     index_f.write(('<a href="balances.csv.csv">'
                    'Download as CSV</a><br>\n'))
@@ -172,7 +173,7 @@ def _deposit_results_html(index_f):
     index_f.write(('<th>Residuals</th>\n'))
     index_f.write(('<a href="residuals.csv">'
                    'Download as CSV</a><br>\n'))
-
+    # TODO: Add tree
 
 # OLS summary
 def ols_summary(output_dir: str, model: OLSModel, ndim=10) -> None:
