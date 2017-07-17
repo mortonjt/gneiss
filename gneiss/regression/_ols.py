@@ -9,6 +9,7 @@ from collections import OrderedDict
 import numpy as np
 import pandas as pd
 from gneiss.regression._model import RegressionModel
+from gneiss.composition import ilr_transform
 from gneiss.util import _type_cast_to_float
 from gneiss.balances import balance_basis
 from skbio.stats.composition import ilr_inv
@@ -19,7 +20,7 @@ from patsy import dmatrix
 from scipy import stats
 
 
-def ols(formula, table, metadata):
+def ols(formula, table, tree, metadata):
     """ Ordinary Least Squares applied to balances.
 
     An ordinary least squares (OLS) regression is a method for estimating
@@ -52,7 +53,10 @@ def ols(formula, table, metadata):
         individual balances. See `patsy` for more details.
     table : pd.DataFrame
         Contingency table where samples correspond to rows and
-        balances correspond to columns.
+        features correspond to columns.
+    tree : skbio.TreeNode
+        Reference tree used to perform the ilr transform.  The tips of the tree
+        needs to correspond to the columns.
     metadata: pd.DataFrame
         Metadata table that contains information about the samples contained
         in the `table` object.  Samples correspond to rows and covariates
@@ -65,70 +69,16 @@ def ols(formula, table, metadata):
         This includes information about coefficients, pvalues, residuals
         and coefficient of determination from the resulting regression.
 
-    Example
-    -------
-    >>> import numpy as np
-    >>> import pandas as pd
-    >>> from skbio import TreeNode
-    >>> from gneiss.regression import ols
-
-    Here, we will define a table of balances as follows
-
-    >>> np.random.seed(0)
-    >>> n = 100
-    >>> g1 = np.linspace(0, 15, n)
-    >>> y1 = g1 + 5
-    >>> y2 = -g1 - 2
-    >>> Y = pd.DataFrame({'y1': y1, 'y2': y2})
-
-    Once we have the balances defined, we will add some errors
-
-    >>> e = np.random.normal(loc=1, scale=0.1, size=(n, 2))
-    >>> Y = Y + e
-
-    Now we will define the environment variables that we want to
-    regress against the balances.
-
-    >>> X = pd.DataFrame({'g1': g1})
-
-    Once these variables are defined, a regression can be performed.
-    These proportions will be converted to balances according to the
-    tree specified.  And the regression formula is specified to run
-    `temp` and `ph` against the proportions in a single model.
-
-    >>> res = ols('g1', Y, X)
-    >>> res.fit()
-
-    From the summary results of the `ols` function, we can view the
-    pvalues according to how well each individual balance fitted in the
-    regression model.
-
-    >>> res.pvalues
-                          y1             y2
-    Intercept  8.826379e-148   7.842085e-71
-    g1         1.923597e-163  1.277152e-163
-
-    We can also view the balance coefficients estimated in the regression
-    model. These coefficients can also be viewed as proportions by passing
-    `project=True` as an argument in `res.coefficients()`.
-
-    >>> res.coefficients()
-                     y1        y2
-    Intercept  6.016459 -0.983476
-    g1         0.997793 -1.000299
-
-    The overall model fit can be obtained as follows
-
-    >>> res.r2
-    0.99945903186495066
-
     """
+    # TODO: Need to pass in a tree as a parameter.  This will allow us to
+    # effectively bootstrap the data to account for low counts.
 
     # one-time creation of exogenous data matrix allows for faster run-time
     metadata = _type_cast_to_float(metadata.copy())
     x = dmatrix(formula, metadata, return_type='dataframe')
-    ilr_table, x = table.align(x, join='inner', axis=0)
-    return OLSModel(Y=ilr_table, Xs=x)
+    _table, x = table.align(x, join='inner', axis=0)
+    _table, tree = match_tips(table, tree)
+    return OLSModel(tree)
 
 
 class OLSModel(RegressionModel):
@@ -140,20 +90,23 @@ class OLSModel(RegressionModel):
     In addition, summary statistics such as the coefficient
     of determination for the overall fit can be calculated.
 
-
     Attributes
     ----------
-    submodels : list of statsmodels objects
-        List of statsmodels result objects.
-    balances : pd.DataFrame
-        A table of balances where samples are rows and
-        balances are columns.  These balances were calculated
-        using `tree`.
+    tree : skbio.TreeNode
+        Reference tree used to perform the ilr transform.  The tips of the tree
+        needs to correspond to the columns.
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.tree = tree
 
-    def fit(self, **kwargs):
+    def fit_transform(self, **kwargs):
+        pass
+
+    def transform(self, **kwargs):
+        pass
+
+    def fit(self, Y, X, **kwargs):
         """ Fit the ordinary least squares model.
 
         Here, the coefficients of the model are estimated.
@@ -167,20 +120,19 @@ class OLSModel(RegressionModel):
         **kwargs : dict
            Keyword arguments used to tune the parameter estimation.
         """
-        Y = self.response_matrix
-        X = self.design_matrices
 
         n, p = X.shape
         inv = np.linalg.pinv(np.dot(X.T, X))
         cross = np.dot(inv, X.T)
         beta = np.dot(cross, Y)
+        self._beta = beta
+
         pX = np.dot(X, beta)
         resid = (Y - pX)
         sst = (Y - Y.mean(axis=0))
         sse = (resid**2).sum(axis=0)
 
         sst_balance = ((Y - Y.mean(axis=0))**2).sum(axis=0)
-
         sse_balance = (resid**2).sum(axis=0)
         ssr_balance = (sst_balance - sse_balance)
 
@@ -204,6 +156,7 @@ class OLSModel(RegressionModel):
         self._fitted = True
         self._ess = ssr_balance
         self._r2 = 1 - ((resid**2).values.sum() / (sst**2).values.sum())
+        return self
 
     def predict(self, X=None, tree=None, **kwargs):
         """ Performs a prediction based on model.

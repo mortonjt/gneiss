@@ -35,9 +35,19 @@ class RegressionModel(Model):
         self._beta = None
         self._resid = None
         self._fitted = False
-        super().__init__(*args, **kwargs)
-        # there is only one design matrix for regression
-        self.design_matrix = self.design_matrices
+
+    @abc.abstractmethod
+    def fit(self, **kwargs):
+        pass
+
+    @abc.abstractmethod
+    def fit_transform(self, **kwargs):
+        pass
+
+    @abc.abstractmethod
+    def summary(self):
+        """ Print summary results """
+        pass
 
     def coefficients(self, tree=None):
         """ Returns coefficients from fit.
