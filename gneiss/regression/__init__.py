@@ -34,6 +34,7 @@ Classes
 # ----------------------------------------------------------------------------
 from ._ols import ols, OLSModel
 from ._mixedlm import mixedlm, LMEModel
+from ._pls import pls, PLSClassifier, PLSRegressor
 
-
-__all__ = ["ols", "OLSModel", "mixedlm", "LMEModel"]
+__all__ = ["ols", "OLSModel", "mixedlm", "LMEModel",
+           'pls', 'PLSClassifier', 'PLSRegressor']

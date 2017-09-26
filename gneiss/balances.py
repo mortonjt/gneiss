@@ -15,6 +15,7 @@ Functions
 
    balance_basis
    balanceplot
+   pls_balance
 
 """
 # ----------------------------------------------------------------------------
@@ -31,6 +32,9 @@ import numpy as np
 import pandas as pd
 from skbio.stats.composition import clr_inv
 from collections import OrderedDict
+from sklearn.mixture import GaussianMixture
+
+from scipy.stats import norm
 try:
     import ete3
     from gneiss.layouts import default_layout
@@ -276,3 +280,41 @@ def balanceplot(balances, tree,
     ts.show_branch_support = True
 
     return ete_tree, ts
+
+def solve_gaussians(w1, w2, m1, m2, std1, std2):
+    # from stackoverflow
+    # https://stackoverflow.com/a/22579904/1167475
+    a = 1/(2*std1**2) - 1/(2*std2**2)
+    b = m2/(std2**2) - m1/(std1**2)
+    c = m1**2 /(2*std1**2) - m2**2 / (2*std2**2) - np.log((w1/w2) * np.sqrt(std2/std1))
+    return np.roots([a,b,c])
+
+def _reorder(mid, m):
+    lookup = {0: [1, 2], 1: [0, 2], 2: [0, 1]}
+    l, r = lookup[mid]
+    if m[l] > m[r]:
+        l, r = r, l
+    return l, mid, r
+
+def round_balance(spectrum, **init_kwds):
+    """ Rounds a balance given single PLS component. """
+    gmod = GaussianMixture(n_components=3, **init_kwds)
+    gmod.fit(X=spectrum)
+    m = gmod.means_
+    std = np.sqrt(np.ravel(gmod.covariances_))
+    w = gmod.weights_
+    # first identify the distribution closest to zero
+    mid = np.argmin(np.abs(m))
+
+    # solve for intersections closest to zero
+    l, mid, r = _reorder(mid, m)
+    lsol = solve_gaussians(w[mid], w[l], m[mid], m[l], std[mid], std[l])
+    rsol = solve_gaussians(w[mid], w[r], m[mid], m[r], std[mid], std[r])
+    lsol = lsol[np.argmin(np.abs(lsol))]
+    rsol = rsol[np.argmin(np.abs(rsol))]
+
+    if lsol < rsol:
+        return lsol, rsol
+    else:
+        return rsol, lsol
+
