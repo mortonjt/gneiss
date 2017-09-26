@@ -311,6 +311,7 @@ def round_balance(spectrum, **init_kwds):
 
     lsol = solve_gaussians(w[mid], w[l], m[mid], m[l], std[mid], std[l])
     rsol = solve_gaussians(w[mid], w[r], m[mid], m[r], std[mid], std[r])
+
     lsol = lsol[np.argmin(np.abs(lsol))]
     rsol = rsol[np.argmin(np.abs(rsol))]
 
