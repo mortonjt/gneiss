@@ -308,6 +308,7 @@ def round_balance(spectrum, **init_kwds):
 
     # solve for intersections closest to zero
     l, mid, r = _reorder(mid, m)
+
     lsol = solve_gaussians(w[mid], w[l], m[mid], m[l], std[mid], std[l])
     rsol = solve_gaussians(w[mid], w[r], m[mid], m[r], std[mid], std[r])
     lsol = lsol[np.argmin(np.abs(lsol))]
