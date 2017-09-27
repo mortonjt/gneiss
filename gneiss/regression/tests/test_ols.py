@@ -16,6 +16,7 @@ from skbio import TreeNode
 from skbio.util import get_data_path
 from gneiss.regression import ols
 from gneiss.balances import balance_basis
+from gneiss.composition import ilr_transform
 import statsmodels.formula.api as smf
 
 
@@ -280,6 +281,59 @@ class TestOLSCV(unittest.TestCase):
         model.fit()
         res = model.lovo()
         exp = pd.read_csv(get_data_path('lovo2.csv'), index_col=0)
+        pdt.assert_frame_equal(res, exp)
+
+
+class TestOLSCVKL(unittest.TestCase):
+    """ Tests OLS regression with refactored matrix multiplication. """
+    def setUp(self):
+        np.random.seed(0)
+        b01, b11, b21 = 1, 2, -3
+        b02, b12, b22 = 2, -1, 4
+        n = 50
+        x1 = np.linspace(0, 1, n)
+        x2 = np.linspace(0, 1.5, n)**2
+        e = np.random.normal(size=n) * 10
+        y1 = b01 + b11 * x1 + b21 * x2 + e
+        e = np.random.normal(size=n) * 10
+        y2 = b02 + b12 * x1 + b22 * x2 + e
+        Y = pd.DataFrame(np.vstack((y1, y2)).T,
+                         columns=['y1', 'y2'])
+
+        B = pd.DataFrame([[b01, b11, b21],
+                          [b02, b12, b22]])
+
+        X = pd.DataFrame(
+            np.vstack((np.ones(n), x1, x2)).T,
+            columns=['Intercept', 'x1', 'x2'])
+
+        self.Y = Y
+        self.B = B
+        self.X = X
+        self.r1_ = smf.OLS(endog=y1, exog=X).fit()
+        self.r2_ = smf.OLS(endog=y2, exog=X).fit()
+        self.tree = TreeNode.read(['(c, (b,a)y2)y1;'])
+
+    def test_kfold_kl(self):
+        model = ols('x1 + x2', self.Y, self.X)
+        model.fit()
+        basis, _ = balance_basis(self.tree)
+        ref_table = pd.DataFrame(ilr_inv(self.Y, basis),
+                                 index=self.Y.index, columns=self.tree.tips())
+        res = model.kfold(9, ref_table=ref_table, tree=self.tree)
+
+        exp = pd.DataFrame({
+            'fold_0':[3584.576936, 0.168051, 663.109475, 4.636786],
+            'fold_1':[3610.186080, 0.268887, 428.051996, 5.158861],
+            'fold_2':[3768.107015, 0.199264, 197.383442, 2.201219],
+            'fold_3':[3680.381545, 0.220822, 279.114696, 4.677502],
+            'fold_4':[3021.728587, 0.288447, 960.836376, 13.715837],
+            'fold_5':[3533.664042, 0.250359, 445.101004, 6.196358],
+            'fold_6':[3390.104104, 0.220072, 581.636621, 9.083899],
+            'fold_7':[3409.878710, 0.234888, 588.508539, 7.092675],
+            'fold_8':[3369.763754, 0.168513, 709.649187, 7.385428]
+            }, index=['model_mse', 'Rsquared',
+                      'pred_mse', 'mean_KL']).T
         pdt.assert_frame_equal(res, exp)
 
 

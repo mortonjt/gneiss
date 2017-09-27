@@ -312,7 +312,7 @@ class OLSModel(RegressionModel):
         smry.add_df(kfolds, align='l')
         return smry
 
-    def kfold(self, num_folds=10, **kwargs):
+    def kfold(self, num_folds=10, ref_table=None, tree=None, **kwargs):
         """ K-fold cross-validation.
 
         Performs k-fold cross-validation by spliting the data
@@ -324,6 +324,10 @@ class OLSModel(RegressionModel):
         ----------
         num_folds: int, optional
             The number of partitions used for the cross validation.
+        ref_table : pd.DataFrame
+            Table to perform comparisons against, optional
+        tree : skbio.TreeNode
+            Tree required for back transform.
         **kwargs : dict
            Keyword arguments used to tune the parameter estimation.
 
@@ -343,9 +347,17 @@ class OLSModel(RegressionModel):
         nobs = self.response_matrix.shape[0]
         s = nobs // num_folds
         folds = [np.arange(i*s, ((i*s)+s) % nobs) for i in range(num_folds)]
-        results = pd.DataFrame(index=['fold_%d' % i for i in range(num_folds)],
-                               columns=['model_mse', 'Rsquared', 'pred_mse'],
-                               dtype=np.float64)
+        if ref_table is not None:
+            ref_table = ref_table.reindex(index=self.response_matrix.index)
+            results = pd.DataFrame(index=['fold_%d' % i for i in range(num_folds)],
+                                   columns=['model_mse', 'Rsquared',
+                                            'pred_mse', 'mean_KL'],
+                                   dtype=np.float64)
+
+        else:
+            results = pd.DataFrame(index=['fold_%d' % i for i in range(num_folds)],
+                                   columns=['model_mse', 'Rsquared', 'pred_mse'],
+                                   dtype=np.float64)
 
         for k in range(num_folds):
             test = folds[k]
@@ -373,6 +385,18 @@ class OLSModel(RegressionModel):
             pred_mse = np.mean(pred_resid.sum(axis=0))
 
             results.loc['fold_%d' % k, 'pred_mse'] = pred_mse
+
+            # KL divergence between
+            if ref_table is not None:
+                kl = []
+                pred = res_i.predict(X=self.design_matrix.iloc[test],
+                                     tree=tree)
+                for i in self.response_matrix.iloc[test].index:
+                    kl += [stats.entropy(pred.loc[i].values,
+                                         ref_table.loc[i].values)]
+
+                results.loc['fold_%d' % k, 'mean_KL'] = np.mean(kl)
+
 
         return results
 
