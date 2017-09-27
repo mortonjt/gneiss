@@ -16,6 +16,8 @@ Functions
    radialplot
    balance_boxplot
    balance_barplots
+   balance_histogram
+   mixture_plot
 """
 # ----------------------------------------------------------------------------
 # Copyright (c) 2016--, gneiss development team.
@@ -27,7 +29,9 @@ Functions
 
 from ._heatmap import heatmap
 from ._radial import radialplot
-from ._decompose import balance_boxplot, balance_barplots
+from ._decompose import (balance_boxplot, balance_barplots,
+                         balance_histogram, mixture_plot)
 
 
-__all__ = ["heatmap", "radialplot", "balance_boxplot", "balance_barplots"]
+__all__ = ["heatmap", "radialplot", "balance_boxplot", "mixture_plot"
+           "balance_barplots", "balance_histogram"]

@@ -8,7 +8,11 @@
 import matplotlib
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
+import seaborn as sns
 from gneiss.util import NUMERATOR, DENOMINATOR
+from sklearn.mixture import GaussianMixture
+from scipy.stats import norm
 
 
 def balance_boxplot(balance_name, data, num_color='#FFFFFF',
@@ -57,9 +61,9 @@ def balance_boxplot(balance_name, data, num_color='#FFFFFF',
     # resizing to make sure that there is separation between the
     # edges of the plot, and the boxplot
     pad = (data[balance_name].max() - data[balance_name].min()) / 20
-    ax.axvspan(data[balance_name].min()-pad, 0,
+    ax.axvspan(data[balance_name].min() - pad, 0,
                facecolor=num_color, zorder=0)
-    ax.axvspan(0, data[balance_name].max()+pad,
+    ax.axvspan(0, data[balance_name].max() + pad,
                facecolor=denom_color, zorder=0)
 
     if 'hue' in kwargs.keys():
@@ -155,3 +159,89 @@ def balance_barplots(tree, balance_name, header, feature_metadata,
     ax_num.set_xlim([0,  max([num_.max().values[1],
                               denom_.max().values[1]])])
     return ax_num, ax_denom
+
+def balance_histogram(balance, metadata, colors=None, hist_kwargs={}, ax=None):
+    """ Plots histogram of balances values over all sample classes.
+
+    Parameters
+    ----------
+    balance : pd.Series
+       Vector of balance values.
+    metadata : pd.Series
+       Metadata categories.
+    colors : pd.Series
+       Colors to plot for each metadata category.
+    hist_kwargs : dict
+       Arguments to pass into seaborn.distplot
+    ax : matplotlib.pyplot.axes
+        Axes object to plot histogram on, optional
+
+    Returns
+    -------
+    ax : matplotlib.pyplot.axes
+    """
+    cats = metadata.value_counts().index
+    if colors is None:
+        colors = pd.Series(sns.color_palette('hls', len(cats)),
+                           index=cats)
+    if ax is None:
+        f, ax = plt.subplots()
+
+    for c in cats:
+        sns.distplot(balance[metadata==c],
+                     label=c, color=colors[c], ax=ax, **hist_kwargs)
+        ax.legend()
+        ax.set_ylabel('Proportion of Samples')
+        ax.set_xlabel('Balance')
+    return ax
+
+
+def mixture_plot(spectrum, intervals=100,
+                 numerator_color='r', filter_color='b', denominator_color='g',
+                 fit_kwargs={}, hist_kwargs={}, ax=None):
+    """ Plots Gaussian Mixtures on top of histogram.
+
+    Parameters
+    ----------
+    spectrum : array_like
+        Vector of values to plot for histogram
+    numerator_color : str
+        Color to plot numerator distribution.
+    filter_color :
+        Color to plot filtered distribution.
+    denominator_color :
+        Color to plot denominator distribution.
+    fit_kwargs : dict
+        Parameters to pass into the Gaussian Mixture Model.
+    hist_kwargs : dict
+        Parameters to pass into seaborn.distplot
+    ax : matplotlib.pyplot.axes
+        Axes object to plot histogram on, optional
+
+    Returns
+    -------
+    ax : matplotlib.pyplot.axes
+    """
+    if ax is None:
+        fig, ax = plt.subplots()
+    if 'n_components' not in fit_kwargs.keys():
+        fit_kwargs['n_components'] = 3
+    if 'norm_hist' not in fit_kwargs.keys():
+        fit_kwargs['norm_hist'] = True
+    if 'kde' not in fit_kwargs.keys():
+        fit_kwargs['kde'] = False
+    x = np.array(spectrum).reshape(1, -1).T
+    mixture = GaussianMixture(**fit_kwargs)
+    mixture.fit(X=x)
+
+    m = np.ravel(mixture.means_)
+    s = np.ravel(np.sqrt(mixture.covariances_))
+    w = np.ravel(mixture.weights_)
+
+    x = np.linspace(spectrum.min(), spectrum.max(), intervals)
+
+    sns.distplot(spectrum, ax=ax, **hist_kwargs)
+    ax.plot(x, w[0]*norm.pdf(x, m[0], s[0]), numerator_color)
+    ax.plot(x, w[1]*norm.pdf(x, m[1], s[1]), filter_color)
+    ax.plot(x, w[2]*norm.pdf(x, m[2], s[2]), denominator_color)
+    return ax
