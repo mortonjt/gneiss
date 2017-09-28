@@ -138,7 +138,7 @@ class PLSClassifier():
 
         if auroc < auroc_flipped:
             group_fpr, group_tpr = flipped_fpr, flipped_tpr
-            X = 1 - X
+            Y = 1 - Y
             auroc = auroc_flipped
 
         f = lambda x, y: euclidean(x, (1 - y))
