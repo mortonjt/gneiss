@@ -23,7 +23,8 @@ Classes
 
    OLSModel
    LMEModel
-
+   PLSClassifier
+   PLSRegressor
 """
 # ----------------------------------------------------------------------------
 # Copyright (c) 2016--, gneiss development team.
