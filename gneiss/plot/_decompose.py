@@ -160,6 +160,7 @@ def balance_barplots(tree, balance_name, header, feature_metadata,
                               denom_.max().values[1]])])
     return ax_num, ax_denom
 
+
 def balance_histogram(balance, metadata, colors=None, hist_kwargs={}, ax=None):
     """ Plots histogram of balances values over all sample classes.
 

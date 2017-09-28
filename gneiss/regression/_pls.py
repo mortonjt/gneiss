@@ -142,11 +142,11 @@ class PLSClassifier():
             auroc = auroc_flipped
 
         f = lambda x, y: euclidean(x, (1 - y))
-        E = np.vstack((group_fpr, 1 - group_tpr))
+        E = np.vstack((1 - group_fpr, group_tpr))
         E = np.sum(E**2, axis=0)
-
-        i = np.argmin(E)
+        i = max(0, np.argmin(E) - 1)
         self.threshold = thresholds[i]
+
         self.numerator = list(num.index)
         self.denominator = list(denom.index)
         return auroc, self.kfold(metadata=Y, table=X, num_folds=num_folds,
