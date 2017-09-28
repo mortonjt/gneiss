@@ -392,9 +392,9 @@ class OLSModel(RegressionModel):
                 pred = res_i.predict(X=self.design_matrix.iloc[test],
                                      tree=tree)
                 for i in self.response_matrix.iloc[test].index:
-                    kl += [stats.entropy(pred.loc[i].values,
-                                         ref_table.loc[i].values)]
 
+                    kl += [stats.entropy(ref_table.loc[i].values,
+                                         pred.loc[i].values)]
                 results.loc['fold_%d' % k, 'mean_KL'] = np.mean(kl)
 
 
