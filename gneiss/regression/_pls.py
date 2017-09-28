@@ -123,7 +123,8 @@ class PLSClassifier():
 
         group_fpr, group_tpr, thresholds = roc_curve(
             y_true=Y,
-            y_score=b)
+            y_score=b,
+            drop_intermediate=False)
         auroc = auc(group_tpr, group_fpr)
 
         # calculate the AUC for the reverse - remember
@@ -131,7 +132,8 @@ class PLSClassifier():
         # perfected good classifier.
         flipped_fpr, flipped_tpr, thresholds = roc_curve(
             y_true=1-Y,
-            y_score=b)
+            y_score=b,
+            drop_intermediate=False)
         auroc_flipped = auc(flipped_tpr, flipped_fpr)
 
         self.balance = b
