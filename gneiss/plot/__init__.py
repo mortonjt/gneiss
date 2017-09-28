@@ -30,8 +30,8 @@ Functions
 from ._heatmap import heatmap
 from ._radial import radialplot
 from ._decompose import (balance_boxplot, balance_barplots,
-                         balance_histogram, mixture_plot)
+                         balance_histogram, mixture_plot, proportion_plot)
 
 
 __all__ = ["heatmap", "radialplot", "balance_boxplot", "mixture_plot"
-           "balance_barplots", "balance_histogram"]
+           "balance_barplots", "balance_histogram", "proportion_plot"]
