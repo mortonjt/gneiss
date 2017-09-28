@@ -226,9 +226,9 @@ def mixture_plot(spectrum, intervals=100,
         fig, ax = plt.subplots()
     if 'n_components' not in fit_kwargs.keys():
         fit_kwargs['n_components'] = 3
-    if 'norm_hist' not in fit_kwargs.keys():
+    if 'norm_hist' not in hist_kwargs.keys():
         fit_kwargs['norm_hist'] = True
-    if 'kde' not in fit_kwargs.keys():
+    if 'kde' not in hist_kwargs.keys():
         fit_kwargs['kde'] = False
     x = np.array(spectrum).reshape(1, -1).T
     mixture = GaussianMixture(**fit_kwargs)
