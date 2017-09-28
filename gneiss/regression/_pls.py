@@ -20,7 +20,8 @@ from statsmodels.iolib.summary2 import Summary
 from statsmodels.sandbox.tools.cross_val import LeaveOneOut
 from patsy import dmatrix
 from scipy import stats
-from scipy.stats import linregress, spearmanr
+from scipy.stats import linregress, pearsonr, f_oneway
+
 from sklearn.preprocessing import LabelEncoder
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.model_selection import KFold
@@ -100,6 +101,10 @@ class PLSClassifier():
         -------
         auroc : np.float
             Area under the curve - also a proxy for accuracy.
+        f_statistic : np.float
+            F-statistic
+        p_value : np.float
+            TypeI error for no separation
         cv : pd.DataFrame
             Cross validation results for the classifier.
         """
@@ -151,8 +156,40 @@ class PLSClassifier():
 
         self.numerator = list(num.index)
         self.denominator = list(denom.index)
-        return auroc, self.kfold(metadata=Y, table=X, num_folds=num_folds,
-                                 random_state=random_state, **kwargs)
+        cv = self.kfold(metadata=Y, table=X, num_folds=num_folds,
+                        random_state=random_state, **kwargs)
+        a, f, p = self.score(Y, X)
+        return a, f, p, cv
+
+    def score(self, Y, X):
+        """ Calculates AUC, f-statistic, and p-value.
+
+        Parameters
+        ----------
+        X : np.array
+            Independent variable where the rows are samples
+            and the columns are features.
+        Y : np.array
+            Dependent variables, where rows are samples and
+            the columns are covariates.
+
+        Returns
+        -------
+        auroc : np.float
+            Area under the curve - also a proxy for accuracy.
+        f_statistic : np.float
+            F-statistic
+        p_value : np.float
+            TypeI error for no separation
+        """
+        group_fpr, group_tpr, thresholds = roc_curve(
+            y_true=Y,
+            y_score=self.balance,
+            drop_intermediate=False)
+        auroc = auc(group_tpr, group_fpr)
+        f_statistic, p_value = f_oneway(self.balance.iloc[Y.values].values,
+                                        self.balance.iloc[~Y.values].values)
+        return auroc, f_statistic, p_value
 
     def predict(self, X=None, **kwargs):
         """ Perform prediction based on PLS model. """
@@ -236,12 +273,14 @@ class PLSRegressor(RegressionModel):
         b = (np.log(X.loc[:, num.index]).mean(axis=1) -
              np.log(X.loc[:, denom.index]).mean(axis=1))
         self.balance = b * np.sqrt(r_ * s_ / (r_ + s_))
-        r2 = spearmanr(b, Y)
+
 
         self.numerator = list(num.index)
         self.denominator = list(denom.index)
-        return r2, self.kfold(metadata=Y, table=X,
-                              num_folds=num_folds, **kwargs)
+        slope, r, p_value = self.score(Y, X)
+        cv = self.kfold(metadata=Y, table=X,
+                        num_folds=num_folds, **kwargs)
+        return slope, r, p_value, cv
 
     def predict(self, X=None, **kwargs):
         """ Perform prediction based on PLS model. """
@@ -249,6 +288,39 @@ class PLSRegressor(RegressionModel):
 
     def summary(self):
         pass
+
+    def score(self, Y, X):
+        """ Calculates Pearson R^2 and p-value.
+
+        Parameters
+        ----------
+        X : np.array
+            Independent variable where the rows are samples
+            and the columns are features.
+        Y : np.array
+            Dependent variables, where rows are samples and
+            the columns are covariates.  Note that this
+            can only handle 1 covariate at the moment.
+
+        Returns
+         -------
+        slope : np.float
+            Slope of balance vs covariate Y.
+        r : np.float
+            Pearson correlation coefficient.
+        p_value : np.float
+            TypeI error for no linear correlation
+        """
+        r_, s_ = len(self.numerator), len(self.denominator)
+        b = (np.log(X.loc[:, self.numerator]).mean(axis=1) -
+             np.log(X.loc[:, self.denominator]).mean(axis=1))
+
+        balance = b * np.sqrt(r_ * s_ / (r_ + s_))
+
+        slope, _, r, p_value, _ = linregress(self.balance, Y)
+
+        return slope, r, p_value
+
 
     def kfold(self, table, metadata, num_folds, random_state=None,
               **kwargs):
