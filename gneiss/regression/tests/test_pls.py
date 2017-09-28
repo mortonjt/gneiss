@@ -26,7 +26,7 @@ class TestPLSClassifier(unittest.TestCase):
         metadata = pd.read_csv(get_data_path('test_pls_metadata.csv'),
                                index_col=0)
         model = PLSClassifier()
-        auc, cv = model.fit(X=table+1, Y=metadata.Group, num_folds=4,
+        a, f, p, cv = model.fit(X=table+1, Y=metadata.Group, num_folds=4,
                             random_state=10)
         exp_numerator = ['0', '1']
         exp_denominator = ['2', '3']
@@ -41,6 +41,12 @@ class TestPLSClassifier(unittest.TestCase):
         npt.assert_allclose(exp_cv.AUROC.values, cv.AUROC.values)
         self.assertAlmostEqual(-0.80909719, model.threshold)
 
+        # test scores
+        a, f, p = model.score(X=table+1, Y=metadata.Group)
+        self.assertAlmostEqual(0.9996, a, places=2)
+        self.assertAlmostEqual(140754.473344, f, places=2)
+        self.assertAlmostEqual(2.31748935005e-284, p, places=2)
+
 
 class TestPLSRegressor(unittest.TestCase):
     def test_pls_simple(self):
@@ -49,7 +55,7 @@ class TestPLSRegressor(unittest.TestCase):
         metadata = pd.read_csv(get_data_path('test_pls_metadata.csv'),
                                index_col=0)
         model = PLSRegressor()
-        q2, cv = model.fit(X=table+1, Y=metadata.Gradient,
+        s, r, p, cv = model.fit(X=table+1, Y=metadata.Gradient,
                            num_folds=4, random_state=0)
         exp_numerator = ['2', '3']
         exp_denominator = ['0', '1']
@@ -63,6 +69,12 @@ class TestPLSRegressor(unittest.TestCase):
                     0.785160649301, 0.796454294479]},
             index=[0, 1, 2, 3])
         pdt.assert_frame_equal(cv, exp_cv)
+
+        # test scores
+        s, r, p = model.score(X=table+1, Y=metadata.Group)
+        self.assertAlmostEqual(0.0716890780733, s, places=2)
+        self.assertAlmostEqual(0.962402355106, r, places=2)
+        self.assertAlmostEqual(2.82490204804e-57, p, places=2)
 
 
 if __name__=="__main__":
