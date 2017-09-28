@@ -39,7 +39,7 @@ class TestPLSClassifier(unittest.TestCase):
                               index=[0, 1, 2, 3])
 
         npt.assert_allclose(exp_cv.AUROC.values, cv.AUROC.values)
-        self.assertAlmostEqual(7.8194896331975379, model.threshold)
+        self.assertAlmostEqual(-0.80909719, model.threshold)
 
 
 class TestPLSRegressor(unittest.TestCase):
