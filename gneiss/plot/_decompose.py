@@ -253,7 +253,7 @@ def proportion_plot(table, metadata, category, left_group, right_group,
                     feature_metadata=None,
                     label_col='species',
                     num_color='#105d33', denom_color='#b0d78e',
-                    axes=(None, None)):
+                    axes=(None, None), figsize=(5, 5)):
     """ Plot the mean proportions of features within a balance.
 
     This plots the numerator and denominator components within a balance.
@@ -292,15 +292,13 @@ def proportion_plot(table, metadata, category, left_group, right_group,
     """
     import seaborn as sns
     if axes[0] is None or axes[1] is None:
-        f, (ax_num, ax_denom) = plt.subplots(1, 2)
+        f, (ax_num, ax_denom) = plt.subplots(1, 2, figsize=figsize)
     else:
         ax_num, ax_denom = axes[0], axes[1]
 
     fname = 'feature'
-    ptable = table.apply(lambda x: x / x.sum(), axis=1)
-    num_df = ptable[num_features]
-
-    denom_df = ptable[denom_features]
+    num_df = table[num_features]
+    denom_df = table[denom_features]
 
     # merge together metadata and sequences
     num_data_ = pd.merge(metadata, num_df,
