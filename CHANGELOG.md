@@ -1,4 +1,6 @@
 # gneiss changelog
+## Version 0.4.4
+* Adding more documentation
 
 ## Version 0.4.3
 * Enabling direct download of fdr corrected pvalues
