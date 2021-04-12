@@ -12,7 +12,7 @@ import pandas as pd
 import pandas.util.testing as pdt
 from skbio import TreeNode
 from gneiss.util import match, match_tips, design_formula
-from gneiss.util import (rename_internal_nodes,
+from gneiss.util import (rename_internal_nodes, rename_clades,
                          _type_cast_to_float, block_diagonal, band_diagonal,
                          split_balance, check_internal_nodes,
                          _xarray_match_tips)
@@ -504,6 +504,22 @@ class TestMatch(unittest.TestCase):
 
 
 class TestUtil(unittest.TestCase):
+
+    def test_rename_clades(self):
+        tree = TreeNode.read([u"(((a,b), c)Firmicutes,d)r;"])
+        exp_tree = TreeNode.read([u"(((a,b)clade0, c)Firmicutes,d)r;"])
+        res_tree = rename_clades(tree)
+        self.assertEqual(str(exp_tree), str(res_tree))
+
+    def test_rename_clades_immutable(self):
+        tree = TreeNode.read([u"(((a,b)Clostridia, c),d)r;"])
+        rename_clades(tree)
+        self.assertEqual(str(tree), "(((a,b)Clostridia,c),d)r;\n")
+
+    def test_rename_clades_mutable(self):
+        tree = TreeNode.read([u"(((a,b)Clostridia, c),d)r;"])
+        rename_clades(tree, inplace=True)
+        self.assertEqual(str(tree), "(((a,b)Clostridia,c)clade0,d)r;\n")
 
     def test_rename_internal_nodes(self):
         tree = TreeNode.read([u"(((a,b), c),d)r;"])
