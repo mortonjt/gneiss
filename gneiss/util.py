@@ -396,8 +396,10 @@ def rename_clades(tree, inplace=False):
             n.name = f"clade{i}"
             i += 1
         elif n.name in obs_clades.keys():
-            obs_clades[n.name] += 1
             n.name = f"{n.name}{obs_clades[n.name]}"
+            obs_clades[n.name] += 1
+        else:
+            obs_clades[n.name] += 1
     return _tree
 
 

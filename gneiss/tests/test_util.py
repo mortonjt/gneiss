@@ -521,6 +521,11 @@ class TestUtil(unittest.TestCase):
         rename_clades(tree, inplace=True)
         self.assertEqual(str(tree), "(((a,b)Clostridia,c)clade0,d)r;\n")
 
+    def test_rename_clades_dup(self):
+        tree = TreeNode.read([u"(((a,b)Clostridia, c)Clostridia,d)r;"])
+        rename_clades(tree, inplace=True)
+        self.assertEqual(str(tree), "(((a,b)Clostridia1,c)Clostridia,d)r;\n")
+
     def test_rename_internal_nodes(self):
         tree = TreeNode.read([u"(((a,b), c),d)r;"])
         exp_tree = TreeNode.read([u"(((a,b)y2, c)y1,d)y0;"])
