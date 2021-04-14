@@ -29,6 +29,7 @@ Functions
 import warnings
 import numpy as np
 from skbio.stats.composition import closure
+from collections import Counter
 import pandas as pd
 from patsy import dmatrix
 import biom
@@ -354,6 +355,51 @@ def rename_internal_nodes(tree, names=None, inplace=False):
 
             n.name = label
             i += 1
+    return _tree
+
+
+def rename_clades(tree, inplace=False):
+    """ Names the internal according to level ordering.
+
+    The tree will be traversed in level order (i.e. top-down, left to right)
+    and missing labels will be replaced with `clade_i`, where `i` is the
+    level ordering position. Duplicate internal node names will also be
+    renamed according to level ordering position.
+
+
+    Parameters
+    ----------
+    tree : skbio.TreeNode
+        Tree object where the leafs correspond to the features.
+    inplace : bool, optional
+        Specifies if the operation should be done on the original tree or not.
+
+    Returns
+    -------
+    skbio.TreeNode
+       Tree with renamed internal nodes.
+
+    Raises
+    ------
+    ValueError:
+        Raised if `tree` and `name` have incompatible sizes.
+    """
+    if inplace:
+        _tree = tree
+    else:
+        _tree = tree.copy()
+
+    i = 0
+    obs_clades = Counter()
+    for n in _tree.levelorder(include_self=True):
+        if n.name is None:
+            n.name = f"clade{i}"
+            i += 1
+        elif n.name in obs_clades.keys():
+            n.name = f"{n.name}{obs_clades[n.name]}"
+            obs_clades[n.name] += 1
+        else:
+            obs_clades[n.name] += 1
     return _tree
 
 
